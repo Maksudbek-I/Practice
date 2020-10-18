@@ -5,7 +5,6 @@ public enum Colors {
     RED("\u001B[91m"),
     YELLOW("\u001B[93m");
 
-
     private final String code;
 
     Colors(String code) {
