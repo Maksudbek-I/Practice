@@ -1,4 +1,5 @@
 package Practice.Practice_10;
+
 import javax.swing.*;
 
 public class Main {
