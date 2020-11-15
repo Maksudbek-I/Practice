@@ -9,7 +9,7 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Scanner;
 
-public class Test {
+public class Chat {
 
      public void Client () {
         Scanner in=new Scanner(System.in);
