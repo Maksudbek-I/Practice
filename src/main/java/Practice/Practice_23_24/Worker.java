@@ -3,127 +3,158 @@ package Practice.Practice_23_24;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.lang.reflect.Type;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Random;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class Worker {
+    private final String taskAddress = "http://80.87.199.76:3000/tasks";
+    private final String reportAddress = "http://80.87.199.76:3000/reports";
+    private final String filePath = "src/main/java/Practice/Practice_23_24/db.json";
+    private final Gson gson = new Gson();
+    private final HttpClient httpClient = HttpClient.newHttpClient();
+    private final File file = new File(filePath);
+    private List<Integer> completedIdList = new ArrayList<>();
+    private List<Task> tasks = new ArrayList<>();
 
-    private String localPath = "src/main/java/Practice_23_24/db.json";
-    private String networkPath = "http://80.87.199.76:3000/tasks/";
-    private String reportPath = "http://80.87.199.76:3000/reports/";
-    private Gson gson = new Gson();
-    private HttpClient httpClient = HttpClient.newHttpClient();
-    private List<Task> taskList;
-    private List<Report> reportList;
-    private int id;
 
-    public void execApp() throws IOException, InterruptedException {
+    public Worker() {
+        try {
+            file.createNewFile();
+        } catch (
+                IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void start() {
         while (true) {
-
-            Type type = new TypeToken<ArrayList<Report>>() {}.getType();
-            List<Report> rp = null;
-            try (FileReader r = new FileReader(localPath)) {
-                rp = gson.fromJson(r, type);
-            } catch (IOException e) {
-                e.printStackTrace();
+            tasks = getAllTasks();
+            for (Task task :
+                    tasks) {
+                if (!checkTask(task.getId())) {
+                    postReport(new Report(0, task.getId(), solveTask(task)));
+                    //System.out.println(new Report(0, task.getId(), solveTask(task)).toString());
+                    saveTasks();
+                }
             }
-            reportList = rp;
-            id = reportList.size()+1;
-
-            Type collectionType = new TypeToken<Collection<Task>>() {
-            }.getType();
-            HttpRequest httpRequest = HttpRequest.newBuilder()
-                    .GET()
-                    .uri(URI.create(networkPath))
-                    .build();
-            HttpResponse<String> response = httpClient.send(httpRequest, HttpResponse.BodyHandlers.ofString());
-            taskList = gson.fromJson(response.body(), collectionType);
-            if ( taskList.size()>reportList.size()) {
-                for (int i = reportList.size(); i < taskList.size(); i++)
-                    fileWriter(reporter(worker(taskList.get(i).getExpression())));
-                id=id+1;
-            }
-
             try {
-                Thread.sleep((int) (Math.random() * 1000 + 1000));
-            } catch (InterruptedException e) {
+                TimeUnit.SECONDS.sleep((long) (Math.random() * 2) - 1);
+            }
+            catch (InterruptedException e)
+            {
                 e.printStackTrace();
             }
         }
     }
 
+    public List<Task> getAllTasks() {
+        List<Task> items = null;
+        Type collectionType = new TypeToken<Collection<Task>>() {
+        }.getType();
+        try {
+            HttpRequest request = HttpRequest.newBuilder()
+                    .GET()
+                    .uri(URI.create(taskAddress))
+                    .build();
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            items = gson.fromJson(response.body(), collectionType);
+        } catch (InterruptedException | IOException e) {
+            e.printStackTrace();
+        }
+        return items;
+    }
 
-    private String reporter(double answer) {
-        Report report = new Report(id, answer);
-        String json = gson.toJson(report);
+    public boolean checkTask(int id)
+    {
+        for (int completedId : completedIdList)
+        {
+            if (completedId == id)
+                return true;
+        }
+        return false;
+    }
+
+    public void postReport(Report report) {
         HttpRequest request = HttpRequest.newBuilder()
-                .POST(HttpRequest.BodyPublishers.ofString(json))
-                .uri(URI.create(reportPath))
+                .POST(HttpRequest.BodyPublishers.ofString(gson.toJson(report)))
+                .uri(URI.create(reportAddress))
                 .setHeader("Content-Type", "application/json")
                 .build();
         try {
             httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
+        } catch (IOException | InterruptedException e) {
             e.printStackTrace();
         }
-        java.lang.System.out.println(json);
-        return json;
     }
 
-    private double worker(String expression) {
-        expression = expression.replace(" ", "");
-        Pattern pattern = Pattern.compile("(?<first>[-]*\\d+)(?<sign>[*+/-])(?<second>[-]*\\d+)");
+    public double solveTask(Task task) {
+        String expression = task.getExpression().replace(" ", "");
+        double foperand, soperand, result = 0;
+        Pattern pattern = Pattern.compile("(?<foperand>[-]*\\d+)(?<operator>[-+*/])(?<soperand>[-]*\\d+)");
         Matcher matcher = pattern.matcher(expression);
-        java.lang.System.out.println(expression);
-        while (matcher.find()) {
-            if (matcher.group("sign").contains("*"))
-                return Integer.parseInt(matcher.group("first"))
-                        * Integer.parseInt(matcher.group("second"));
-            if (matcher.group("sign").contains("/"))
-                return Math.ceil((100 *
-                        Integer.parseInt(matcher.group("first"))
-                        / Integer.parseInt(matcher.group("second"))))
-                        / 100;
-            if (matcher.group("sign").contains("+"))
-                return Integer.parseInt(matcher.group("first"))
-                        + Integer.parseInt(matcher.group("second"));
-            if (matcher.group("sign").contains("-"))
-                return Integer.parseInt(matcher.group("first"))
-                        - Integer.parseInt(matcher.group("second"));
+        if (matcher.find()) {
+            foperand = Double.parseDouble(matcher.group("foperand"));
+            soperand = Double.parseDouble(matcher.group("soperand"));
+            switch (matcher.group("operator")) {
+                case "-": {
+                    result = foperand - soperand;
+                    break;
+                }
+                case "+": {
+                    result = foperand + soperand;
+                    break;
+                }
+                case "*": {
+                    result = foperand * soperand;
+                    break;
+                }
+                case "/": {
+                    result = foperand / soperand;
+                    break;
+                }
+            }
+            result = new BigDecimal(Double.toString(result)).setScale(2, RoundingMode.HALF_UP).doubleValue();
         }
-        return 0;
+        completedIdList.add(task.getId());		//добавляем id выполненного таска в список
+        return result;
     }
 
-    private void fileWriter(String json) {
-        StringBuilder sb = new StringBuilder();
-        String line;
-        try (BufferedReader reader = new BufferedReader(new FileReader(localPath))) {
-            line = reader.readLine();
-            while (!line.equals("]") && line != null) {
-                sb.append(line);
-                if (line.endsWith("}"))
-                    sb.append(",");
-                sb.append("\n");
-                line = reader.readLine();
+    private void saveTasks() {
+        try {
+            FileWriter writer = new FileWriter(filePath);
+            writer.write("[\n");
+            int count = 1;
+            for (Task task : tasks)
+            {
+                writer.write(gson.toJson(task));
+                if (count != tasks.size())
+                {
+                    writer.write(",");
+                }
+                writer.write("\n");
+                count++;
             }
-            sb.append(json);
-            try (PrintWriter writer = new PrintWriter(localPath)) {
-                writer.write(sb.toString() + "\n]");
-            }
+            writer.write("]");
+            writer.close();
         } catch (IOException e) {
             e.printStackTrace();
         }
-    }
 
+    }
 }

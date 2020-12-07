@@ -1,17 +1,24 @@
 package Practice.Practice_23_24;
+
+
 public class Report {
-    final private int id = 0;
+    private int id;
     private int taskId;
-    final private String worker = "Igamberdyev";
+    private final String worker = "Igamberdyev";
     private double result;
 
-    public Report(int taskId, double result) {
+    public Report(int id, int taskId, double result) {
+        this.id = id;
         this.taskId = taskId;
         this.result = result;
     }
 
     public int getId() {
         return id;
+    }
+
+    public void setId(int id) {
+        this.id = id;
     }
 
     public int getTaskId() {
@@ -22,16 +29,16 @@ public class Report {
         this.taskId = taskId;
     }
 
-    public String getWorker() {
-        return worker;
-    }
-
     public double getResult() {
         return result;
     }
 
     public void setResult(double result) {
         this.result = result;
+    }
+
+    public String getWorker() {
+        return worker;
     }
 
     @Override
