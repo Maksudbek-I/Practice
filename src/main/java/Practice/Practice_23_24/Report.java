@@ -1,6 +1,5 @@
 package Practice.Practice_23_24;
 
-
 public class Report {
     private int id;
     private int taskId;
