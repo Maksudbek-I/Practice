@@ -6,7 +6,7 @@ import java.util.Iterator;
 public class MyHashMap<K,V> implements HashMapInterface<K,V>{
 
     private final ArrayList<ArrayList<Sample<K,V>>> mapList;
-    private static final int size=10;
+    private static final int size = 10;
     private Sample<K,V> temp = new Sample<>();
 
     public MyHashMap() {
@@ -26,29 +26,19 @@ public class MyHashMap<K,V> implements HashMapInterface<K,V>{
         else {
             for(int i = 0; i < mapList.get(index).size(); i++)
             {
-                Sample<K,V> sample = mapList.get(index).get(i);// поменять на temp
-                if(key.hashCode() == sample.getKey().hashCode())
+                Sample<K,V> sample = mapList.get(index).get(i);
+                if((key.hashCode() == sample.getKey().hashCode())&&(value==sample.getValue()))
                 {
-                   // sample = new Sample<>(key, value);
-                    //mapList.get(index).set(i, sample);
-                    sample.setValue(value);
                     break;
                 }
-                else
-                {
-                    mapList.get(index).add(new Sample<>(key,value));
-                    break;
-                }
+               if (i == mapList.get(index).size() - 1){
+                   mapList.get(index).add(new Sample<>(key,value));
+               }
             }
         }
 
     }
 
-//    @Override
-//    public V get(K key) {
-//        temp=search(key);
-//        return temp != null ? temp.getValue() : null;
-//    }
 
 
     @Override

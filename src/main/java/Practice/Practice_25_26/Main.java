@@ -11,11 +11,11 @@ public class Main {
         myHashMap.add(11, "1");
         myHashMap.add(21, "1");
         myHashMap.add(1, "1.1");
+        myHashMap.add(1, "1.1");
         myHashMap.remove(11);
         myHashMap.add(1, "1.2");
         for (String s: myHashMap)
             System.out.println(s);
 
     }
-
 }
